@@ -7,6 +7,8 @@ void App_PWM_Set_L(float Duty);
 
 void App_PWM_Set_R(float Duty);
 
+void APP_PWM_cmd(uint8_t on);
+
 void PWM_Test(void);
 
 #endif // APP_PWM_H

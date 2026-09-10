@@ -34,10 +34,13 @@
 #include "app_pwm.h"
 #include "app_mpu6050.h"
 #include "app_encoder.h"
+#include "app_motor.h"
+#include "task.h"
 #include "encoder_test.h"
 #include "PWM_test.h"
 #include "mpu6050_test.h"
 #include "qmath_test.h"
+#include "pid_motor_test.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -108,13 +111,15 @@ int main(void)
   MX_USART2_UART_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-  // app_bat_start();
+  app_bat_start();
+  App_Encoder_Init(); // 提升SysTick优先级，必须在HAL_Init/SystemClock_Config之后
+  App_motor_init();
   // PWM_Test();
   // Encoder_Test();
   // Encoder_M_Test();
   // Encoder_T_Method_Test();
-  MPU6050_Test();
-  MPU6050_Euler_Test();
+  // MPU6050_Test();
+  // MPU6050_Euler_Test();
   // QMath_Test();
   // QMath_Tab_Speed_Test();
   /* USER CODE END 2 */
@@ -124,7 +129,13 @@ int main(void)
   while (1)
   {
     //电池按钮执行片段
-		// APP_Button_Process();
+		APP_Button_Process();
+
+    //PID调控片段
+    App_motor_process();
+		
+		Pid_motor_Test();
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -132,7 +143,6 @@ int main(void)
   }
   /* USER CODE END 3 */
 }
-
 /**
   * @brief System Clock Configuration
   * @retval None

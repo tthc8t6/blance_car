@@ -1,6 +1,7 @@
 #include "app_pwm.h"
 #include "math.h"
 #include "tim.h"
+#include "stm32f1xx_hal.h"
 /**
  * @brief 设置左电机PWM占空比
  * @param Duty 占空比，范围-100到100，-100表示反转全速，0表示停止，100表示正转全速
@@ -9,6 +10,16 @@
  */
 void App_PWM_Set_L(float Duty)
 {
+    //钳位到[-100,100]。超范围的float强转uint32是未定义行为，
+    //会让ccr变成乱数（可能远大于ARR，也可能回绕成一个很小的值导致占空比突然掉到接近0）
+    if (Duty != Duty) {           // NaN：任何与NaN的比较都为假，必须单独拦
+        Duty = 0.0f;
+    } else if (Duty > 100.0f) {
+        Duty = 100.0f;
+    } else if (Duty < -100.0f) {
+        Duty = -100.0f;
+    }
+
     int8_t sign = (Duty >= 0) ? 1 : -1;  // 符号位：1表示正转，-1表示反转
     Duty = fabsf(Duty);  // 取绝对值
     uint32_t ccr = (uint32_t)(Duty / 100.0f * 1000);  // 将占空比转换为定时器的脉冲值，ARR=999
@@ -31,6 +42,15 @@ void App_PWM_Set_L(float Duty)
  */
 void App_PWM_Set_R(float Duty)
 {
+    //钳位到[-100,100]，理由同App_PWM_Set_L
+    if (Duty != Duty) {           // NaN
+        Duty = 0.0f;
+    } else if (Duty > 100.0f) {
+        Duty = 100.0f;
+    } else if (Duty < -100.0f) {
+        Duty = -100.0f;
+    }
+
     int8_t sign = (Duty >= 0) ? 1 : -1;  // 符号位：1表示正转，-1表示反转
     Duty = fabsf(Duty);  // 取绝对值
     uint32_t ccr = (uint32_t)(Duty / 100.0f * 1000);  // 将占空比转换为定时器的脉冲值，ARR=999
@@ -47,3 +67,12 @@ void App_PWM_Set_R(float Duty)
     __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, ccr);
 }
 
+//TB6612 驱动芯片的STBY引脚控制函数，on=1表示启动PWM输出，on=0表示停止PWM输出
+void APP_PWM_cmd(uint8_t on)
+{
+    if (on) {
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);
+    } else {
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET);
+    }
+}

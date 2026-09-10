@@ -601,6 +601,26 @@
               <FileType>5</FileType>
               <FilePath>..\Core\Inc\quick_math.h</FilePath>
             </File>
+            <File>
+              <FileName>app_motor.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Core\Inc\app_motor.h</FilePath>
+            </File>
+            <File>
+              <FileName>app_motor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\app_motor.c</FilePath>
+            </File>
+            <File>
+              <FileName>pid.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Core\Inc\pid.h</FilePath>
+            </File>
+            <File>
+              <FileName>pid.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\pid.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -847,6 +867,16 @@
               <FileName>qmath_test.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\test\qmath_test.h</FilePath>
+            </File>
+            <File>
+              <FileName>pid_motor_test.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\test\pid_motor_test.c</FilePath>
+            </File>
+            <File>
+              <FileName>pid_motor_test.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\test\pid_motor_test.h</FilePath>
             </File>
           </Files>
         </Group>

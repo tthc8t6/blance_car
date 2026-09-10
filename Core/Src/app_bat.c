@@ -7,6 +7,10 @@ static uint8_t stage = 0;
 static uint32_t last_tick = 0;
 extern volatile float bat_v; // 电池电压变量
 
+float APP_Get_Bat_Voltage(void) {
+    return bat_v;
+}
+
 // 调用注入序列ADC转换完成回调函数
 void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
@@ -16,7 +20,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc)
         uint32_t adc_value = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_1);
         // bat_v=adc_value*8.4f/3.3*3.3/4095.0f;
         bat_v = adc_value*8.4f/4095.0f;
-       
+
         if (bat_v > 8.4f) {
             bat_v = 8.4f; // 限制最大电压为8.4V
         }
