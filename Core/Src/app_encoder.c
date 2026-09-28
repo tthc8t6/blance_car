@@ -130,7 +130,7 @@ void App_Encoder_Get_Count(volatile float* count_L, volatile float* count_R)
     *count_R = encoder_count_R /22.0f/(30613.0f/1500.0f)*360.0f; // 将编码器计数转换为弧度，22为编码器每转的脉冲数，3061/1500为减速比，360为每转的弧度
 }
 
-void App_Encoder_Get_Speed(volatile float* speed_L, volatile float* speed_R)
+void App_Encoder_Get_Speed(volatile float* omega_speed_L, volatile float* omega_speed_R)
 {
   // 原子读取时间戳，防止中断修改导致数据不一致 导致异常值
   // 注意：App_GetMicroseconds() 必须放在临界区之外调用。它内部会开关中断，
@@ -162,13 +162,13 @@ void App_Encoder_Get_Speed(volatile float* speed_L, volatile float* speed_R)
   // 每脉冲角度 = 360 / (22 * 减速比) ≈ 0.8°，所以是 /22.0f/(...) 而非 *22.0f，减速比=(30613.0f / 1500.0f)
   // 发生转向时速度为0，因为转向时T会变得非常小，导致计算出的速度异常大，所以直接将速度置0
   if(dir_l==2||dir_l==-2) 
-		*speed_L = 0;
+		*omega_speed_L = 0;
   else
-  *speed_L = (dir_l / T_L) / 22.0f / (30613.0f / 1500.0f) * 6.2831853f;// 角速度(弧度/秒) = 每脉冲角度 / T。换算因子须与 App_Encoder_Get_Count 完全一致，使用弧度制计算角速度，方便后续使用
+  *omega_speed_L = (dir_l / T_L) / 22.0f / (30613.0f / 1500.0f) * 6.2831853f;// 角速度(弧度/秒) = 每脉冲角度 / T。换算因子须与 App_Encoder_Get_Count 完全一致，使用弧度制计算角速度，方便后续使用
   if(dir_r==2||dir_r==-2) 
-		*speed_R = 0;
+		*omega_speed_R = 0;
   else
-  *speed_R = (dir_r / T_R) / 22.0f / (30613.0f / 1500.0f) * 6.2831853f;// 角速度(弧度/秒) = 每脉冲角度 / T。换算因子须与 App_Encoder_Get_Count 完全一致，使用弧度制计算角速度，方便后续使用
+  *omega_speed_R = (dir_r / T_R) / 22.0f / (30613.0f / 1500.0f) * 6.2831853f;// 角速度(弧度/秒) = 每脉冲角度 / T。换算因子须与 App_Encoder_Get_Count 完全一致，使用弧度制计算角速度，方便后续使用
 }
 
 

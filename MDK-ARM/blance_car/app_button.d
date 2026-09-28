@@ -32,3 +32,4 @@ blance_car\app_button.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 blance_car\app_button.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
 blance_car\app_button.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
 blance_car\app_button.o: ../Core/Inc/app_motor.h
+blance_car\app_button.o: ../Core/Inc/app_control.h

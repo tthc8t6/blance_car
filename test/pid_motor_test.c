@@ -25,8 +25,8 @@ static void USART2_Process(void)
 void Pid_motor_Test(void) 
 {
   target_speed = (HAL_GetTick() / 1000) % 10 * 2.0f; // 目标速度每秒增加2弧度，10秒后回到0
-  App_motor_set_speed_L(target_speed); // 设置左电机目标速度
-  App_motor_set_speed_R(target_speed); // 设置右电机目标速度
+  App_Motor_Set_Speed_L(target_speed); // 设置左电机目标速度
+  App_Motor_Set_Speed_R(target_speed); // 设置右电机目标速度
 
   USART2_Process(); // 发送速度数据到VOFA+进行绘图
 }

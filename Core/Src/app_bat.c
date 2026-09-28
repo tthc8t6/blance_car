@@ -73,7 +73,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc)
     }
 }
 
-void app_bat_start(void) 
+void App_Bat_Start(void) 
 {
   HAL_TIM_Base_Start(&htim2);      // 开启定时器产生ADC采集触发信号
   HAL_ADCEx_InjectedStart_IT(&hadc1);  // 启动ADC注入组中断

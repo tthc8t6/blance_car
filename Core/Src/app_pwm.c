@@ -68,7 +68,7 @@ void App_PWM_Set_R(float Duty)
 }
 
 //TB6612 驱动芯片的STBY引脚控制函数，on=1表示启动PWM输出，on=0表示停止PWM输出
-void APP_PWM_cmd(uint8_t on)
+void App_PWM_Cmd(uint8_t on)
 {
     if (on) {
         HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);

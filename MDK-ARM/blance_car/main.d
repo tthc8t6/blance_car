@@ -41,12 +41,8 @@ blance_car\main.o: D:\Keil5\Core\ARM\ARMCC\Bin\..\include\string.h
 blance_car\main.o: ../Core/Inc/app_bat.h
 blance_car\main.o: ../Core/Inc/app_button.h
 blance_car\main.o: ../Core/Inc/app_pwm.h
-blance_car\main.o: ../Core/Inc/app_mpu6050.h
+blance_car\main.o: ../Core/Inc/app_mpu6500.h
 blance_car\main.o: ../Core/Inc/app_encoder.h
 blance_car\main.o: ../Core/Inc/app_motor.h
 blance_car\main.o: ../Core/Inc/task.h
-blance_car\main.o: ../test/encoder_test.h
-blance_car\main.o: ../test/PWM_test.h
-blance_car\main.o: ../test/mpu6050_test.h
-blance_car\main.o: ../test/qmath_test.h
-blance_car\main.o: ../test/pid_motor_test.h
+blance_car\main.o: ../Core/Inc/app_control.h

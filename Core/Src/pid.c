@@ -45,7 +45,7 @@ float PID_Compute(pid_typedef *pid, float feedback) {
             //这样紧接着才能直接拿输出上下限做抗饱和限幅。
             //若累加的是未乘ki的原始误差积分，再用输出量纲的上下限去截，
             //实际限到的是 limit*ki（ki=7时就是7倍），等于没限
-            pid->integral_term += pid->ki * (error + pid->last_error) * delta_time * 0.5f;
+            pid->integral_term = pid->integral_term + pid->ki * (error + pid->last_error) * delta_time * 0.5f;
 
             //限制积分项，避免积分饱和
             if (pid->integral_term > pid->upper_limit) {

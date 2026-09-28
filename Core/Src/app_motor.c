@@ -5,14 +5,14 @@
 #include "app_encoder.h"
 #include "app_pwm.h"
 #include "app_bat.h"
+#include "app_control.h"
 #include "pid.h"
-
 
 static pid_typedef pid_motor_l;//左电机调速系统的PID控制器
 static pid_typedef pid_motor_r;//右电机调速系统的PID控制器
 
 //初始化左右电机的PID控制器
-void App_motor_init(void) {
+void App_Motor_Init(void) {
     pid_init(&pid_motor_l, 0.5f, 7.0f, 0.0f);
     pid_init(&pid_motor_r, 0.5f, 7.0f, 0.0f);
 
@@ -22,12 +22,12 @@ void App_motor_init(void) {
     HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
 }
 
-void App_motor_process(void) {
+void App_Motor_Process(void) {
     PERIODIC(1); //每1ms执行一次
     
     //1.获取左右电机的速度反馈值
-    float speed_L, speed_R;
-    App_Encoder_Get_Speed(&speed_L, &speed_R); //获取左右电机的速度反馈值
+    float omega_speed_L, omega_speed_R;
+    App_Encoder_Get_Speed(&omega_speed_L, &omega_speed_R); //获取左右电机的速度反馈值
 
     //2.用当前电池电压作为PID的输出限幅
     //PID输出的是期望电枢电压，而实际能加到电机上的电压上限就是当前电池电压。
@@ -46,8 +46,8 @@ void App_motor_process(void) {
     pid_limit_config(&pid_motor_r, -vbat, vbat);
 
     //3.计算PID输出并转换为PWM占空比
-    float Ua_l = PID_Compute(&pid_motor_l, speed_L);
-    float Ua_r = PID_Compute(&pid_motor_r, speed_R);
+    float Ua_l = PID_Compute(&pid_motor_l, omega_speed_L);
+    float Ua_r = PID_Compute(&pid_motor_r, omega_speed_R);
 
     float duty_l = Ua_l / vbat*100.0f; // 将PID输出值转换为PWM占空比
     float duty_r = Ua_r / vbat*100.0f; // 将PID输出值转换为PWM占空比
@@ -58,18 +58,18 @@ void App_motor_process(void) {
 }
 
 //设置左右电机的目标转速 单位为弧度每秒
-void App_motor_set_speed_L(float speed_L) {
-    pid_changesp(&pid_motor_l, speed_L); //设置左电机的目标速度
+void App_Motor_Set_Speed_L(float omega_speed_L) {
+    pid_changesp(&pid_motor_l, omega_speed_L); //设置左电机的目标速度
 }
 
 //设置右电机的目标转速 单位为弧度每秒
-void App_motor_set_speed_R(float speed_R) {
-    pid_changesp(&pid_motor_r, speed_R); //设置右电机的目标速度
+void App_Motor_Set_Speed_R(float omega_speed_R) {
+    pid_changesp(&pid_motor_r, omega_speed_R); //设置右电机的目标速度
 }
 
-void App_motor_cmd(uint8_t on) {
+void App_Motor_Cmd(uint8_t on) {
     //启动PWM输出
-    APP_PWM_cmd(on);
+    App_PWM_Cmd(on);
     pid_reset(&pid_motor_l);
     pid_reset(&pid_motor_r);
 }

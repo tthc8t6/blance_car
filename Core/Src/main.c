@@ -32,15 +32,16 @@
 #include "app_bat.h"
 #include "app_button.h"
 #include "app_pwm.h"
-#include "app_mpu6050.h"
+#include "app_mpu6500.h"
 #include "app_encoder.h"
 #include "app_motor.h"
 #include "task.h"
-#include "encoder_test.h"
-#include "PWM_test.h"
-#include "mpu6050_test.h"
-#include "qmath_test.h"
-#include "pid_motor_test.h"
+#include "app_control.h"
+//#include "encoder_test.h"
+//#include "PWM_test.h"
+//#include "mpu6500_test.h"
+//#include "qmath_test.h"
+//#include "pid_motor_test.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -111,15 +112,17 @@ int main(void)
   MX_USART2_UART_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-  app_bat_start();
+  App_Bat_Start();
   App_Encoder_Init(); // 提升SysTick优先级，必须在HAL_Init/SystemClock_Config之后
-  App_motor_init();
+  App_MPU6500_Init();
+  App_Motor_Init();
+  App_Control_Init();
   // PWM_Test();
   // Encoder_Test();
   // Encoder_M_Test();
   // Encoder_T_Method_Test();
-  // MPU6050_Test();
-  // MPU6050_Euler_Test();
+  // MPU6500_Test();
+  // MPU6500_Euler_Test();
   // QMath_Test();
   // QMath_Tab_Speed_Test();
   /* USER CODE END 2 */
@@ -128,13 +131,18 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    //电池按钮执行片段
-		APP_Button_Process();
+   //电池按钮执行片段
+		App_Button_Process();
 
-    //PID调控片段
-    App_motor_process();
+    //MPU6500姿态解算片段
+    App_MPU6500_Process();
+
+    //PID控制片段
+    App_Control_Process();
+
+    //电机调控片段
+    App_Motor_Process();
 		
-		Pid_motor_Test();
 
     /* USER CODE END WHILE */
 

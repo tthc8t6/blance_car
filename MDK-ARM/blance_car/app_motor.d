@@ -38,3 +38,4 @@ blance_car\app_motor.o: ../Core/Inc/task.h
 blance_car\app_motor.o: ../Core/Inc/app_encoder.h
 blance_car\app_motor.o: ../Core/Inc/app_pwm.h
 blance_car\app_motor.o: ../Core/Inc/app_bat.h
+blance_car\app_motor.o: ../Core/Inc/app_control.h

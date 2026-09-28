@@ -577,16 +577,6 @@
               <FilePath>../Core/Src/stm32f1xx_hal_msp.c</FilePath>
             </File>
             <File>
-              <FileName>app_mpu6050.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Core\Src\app_mpu6050.c</FilePath>
-            </File>
-            <File>
-              <FileName>app_mpu6050.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Core\Inc\app_mpu6050.h</FilePath>
-            </File>
-            <File>
               <FileName>task.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\Core\Inc\task.h</FilePath>
@@ -620,6 +610,26 @@
               <FileName>pid.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Core\Src\pid.c</FilePath>
+            </File>
+            <File>
+              <FileName>app_control.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Core\Inc\app_control.h</FilePath>
+            </File>
+            <File>
+              <FileName>app_control.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\app_control.c</FilePath>
+            </File>
+            <File>
+              <FileName>app_mpu6500.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Core\Inc\app_mpu6500.h</FilePath>
+            </File>
+            <File>
+              <FileName>app_mpu6500.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\app_mpu6500.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -849,14 +859,14 @@
               <FilePath>..\test\PWM_test.h</FilePath>
             </File>
             <File>
-              <FileName>mpu6050_test.c</FileName>
+              <FileName>mpu6500_test.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\test\mpu6050_test.c</FilePath>
+              <FilePath>..\test\mpu6500_test.c</FilePath>
             </File>
             <File>
-              <FileName>mpu6050_test.h</FileName>
+              <FileName>mpu6500_test.h</FileName>
               <FileType>5</FileType>
-              <FilePath>..\test\mpu6050_test.h</FilePath>
+              <FilePath>..\test\mpu6500_test.h</FilePath>
             </File>
             <File>
               <FileName>qmath_test.c</FileName>
