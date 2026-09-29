@@ -5,11 +5,11 @@
 #include <string.h>
 #include <math.h>
 
-/**
- * @brief 数学运算测速函数
- * @note 用于测量各种数学运算的速度，MPU6500的欧拉角解算中需要大量调用三角函数
- *       防止影响MPU6500的切片运行速度
- */
+//
+// @简介：数学运算测速：测量整数/浮点四则运算和标准库三角函数的耗时，结果通过串口打印
+// @参数：无
+// @注意：MPU6500欧拉角解算要大量调用三角函数，需防止影响其5ms的运行周期
+//
 void QMath_Test(void)
 {
     char buf[64]={0};
@@ -203,11 +203,10 @@ void QMath_Test(void)
     // while(1);
 }
 
-/**
- * @brief 快速查表法数学运算测速函数
- * @note 用于测量 quick_math.c 中查表法三角函数的速度，
- *       并与标准库 math.h 的三角函数进行对比
- */
+//
+// @简介：快速查表法测速：测量quick_math.c中查表法三角函数的耗时，并与标准库math.h对比
+// @参数：无
+//
 void QMath_Tab_Speed_Test(void)
 {
     char buf[64]={0};

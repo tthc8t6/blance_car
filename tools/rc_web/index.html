@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>平衡车遥控</title>
+<style>
+  :root {
+    --bg: #0f1720;
+    --panel: #18232f;
+    --line: #2a3a4b;
+    --text: #e6edf3;
+    --muted: #8b9bab;
+    --accent: #3fb6ff;
+    --ok: #3fd07a;
+    --warn: #ffb341;
+    --stop: #ff5a5a;
+    --track: 76px;      /* 摇杆滑槽宽度 */
+    --knob: 72px;       /* 摇杆头直径 */
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font: 15px/1.4 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    overscroll-behavior: none; -webkit-user-select: none; user-select: none;
+    touch-action: none; overflow: hidden;
+  }
+  body {
+    display: flex; flex-direction: column;
+    padding: max(10px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+             max(10px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    gap: 10px;
+  }
+
+  /* ---- 顶栏 ---- */
+  header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); flex: none; }
+  .dot.ok { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+  .dot.busy { background: var(--warn); }
+  #status { color: var(--muted); flex: 1; min-width: 8em; }
+  button {
+    font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; padding: 8px 14px; cursor: pointer;
+  }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #04121d; font-weight: 600; }
+  button:disabled { opacity: .45; }
+
+  .info {
+    display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px;
+  }
+  #cmd { font-family: ui-monospace, Consolas, monospace; color: var(--accent); min-width: 11ch; }
+  .info label { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+  #limit { width: 120px; }
+  #err { color: var(--stop); flex-basis: 100%; display: none; }
+
+  /* ---- 摇杆区 ---- */
+  main { flex: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 0; }
+  .stick-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .stick-wrap span { color: var(--muted); font-size: 13px; }
+  .stick {
+    position: relative; background: var(--panel); border: 1px solid var(--line);
+    border-radius: calc(var(--track) / 2); touch-action: none;
+  }
+  .stick.y { width: var(--track); height: min(260px, 52vh); }
+  .stick.x { height: var(--track); width: min(260px, 42vw); }
+  .stick::after {                         /* 中线 */
+    content: ""; position: absolute; background: var(--line);
+  }
+  .stick.y::after { left: 12px; right: 12px; top: 50%; height: 1px; }
+  .stick.x::after { top: 12px; bottom: 12px; left: 50%; width: 1px; }
+  .knob {
+    position: absolute; left: 50%; top: 50%; width: var(--knob); height: var(--knob);
+    margin: calc(var(--knob) / -2) 0 0 calc(var(--knob) / -2);
+    border-radius: 50%; background: radial-gradient(circle at 35% 30%, #6fcaff, var(--accent) 60%, #1f7fb8);
+    box-shadow: 0 4px 14px rgba(0,0,0,.45); pointer-events: none; z-index: 1;   /* 盖住中线 */
+  }
+  .knob.spring { transition: transform .15s ease-out; }
+
+  #stop {
+    width: 88px; height: 88px; border-radius: 50%; flex: none;
+    background: var(--stop); border: none; color: #fff; font-weight: 700; font-size: 18px;
+  }
+  #stop:active { transform: scale(.95); }
+
+  footer { color: var(--muted); font-size: 12px; text-align: center; }
+  @media (max-height: 420px) { footer { display: none; } }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="dot" id="dot"></span>
+  <span id="status">未连接</span>
+  <button class="primary" id="btnConnect">连接小车</button>
+  <button id="btnDisconnect" disabled>断开</button>
+</header>
+
+<div class="info">
+  <span>发送：<span id="cmd">—</span></span>
+  <label>限速 <input type="range" id="limit" min="10" max="100" step="10" value="50"> <b id="limitVal">50%</b></label>
+  <span id="err"></span>
+</div>
+
+<main>
+  <div class="stick-wrap">
+    <div class="stick y" id="pedal"><div class="knob"></div></div>
+    <span>前进 / 后退（W S）</span>
+  </div>
+  <button id="stop">停</button>
+  <div class="stick-wrap">
+    <div class="stick x" id="steer"><div class="knob"></div></div>
+    <span>左转 / 右转（A D）</span>
+  </div>
+</main>
+
+<footer>每 50 ms 发送一次 "move &lt;转向&gt; &lt;速度&gt;\n" 到 BLE 特征 0xFFF2，与老师的安卓 app 相同。松手自动回零。</footer>
+
+<script>
+// ===== BLE 参数：ECB02 透传模块（与老师 app 的 ECBLE.java 一致） =====
+// 用完整 128 位写法：Bluefy（iOS）不一定接受 0xfff0 这种 16 位数字简写
+const SERVICE_UUID    = '0000fff0-0000-1000-8000-00805f9b34fb';
+const WRITE_CHAR_UUID = '0000fff2-0000-1000-8000-00805f9b34fb';
+const SEND_PERIOD_MS  = 50;          // 老师 app：Thread.sleep(50)
+
+const $ = id => document.getElementById(id);
+const encoder = new TextEncoder();
+
+let device = null, writeChar = null, timer = null, writing = false;
+
+// ===== 摇杆：只取一个轴，输出 -1..1，屏幕坐标（右为正、下为正） =====
+function makeStick(el, axis) {
+  const knob = el.querySelector('.knob');
+  const s = { value: 0, pointer: null };
+
+  function move(e) {
+    const r = el.getBoundingClientRect();
+    const half = (axis === 'x' ? r.width : r.height) / 2;
+    const range = half - knob.offsetWidth / 2;               // 摇杆头能走的最大距离
+    let d = axis === 'x' ? e.clientX - (r.left + half) : e.clientY - (r.top + half);
+    d = Math.max(-range, Math.min(range, d));
+    s.value = d / range;
+    knob.style.transform = axis === 'x' ? `translate(${d}px,0)` : `translate(0,${d}px)`;
+  }
+  function release() {
+    s.pointer = null; s.value = 0;
+    knob.classList.add('spring');
+    knob.style.transform = 'translate(0,0)';
+  }
+  el.addEventListener('pointerdown', e => {
+    s.pointer = e.pointerId; el.setPointerCapture(e.pointerId);
+    knob.classList.remove('spring'); move(e);
+  });
+  el.addEventListener('pointermove', e => { if (e.pointerId === s.pointer) move(e); });
+  el.addEventListener('pointerup', e => { if (e.pointerId === s.pointer) release(); });
+  el.addEventListener('pointercancel', e => { if (e.pointerId === s.pointer) release(); });
+  s.release = release;
+  return s;
+}
+const pedal = makeStick($('pedal'), 'y');
+const steer = makeStick($('steer'), 'x');
+
+// ===== 键盘（电脑上用）：按住有效，松开回零 =====
+const keys = new Set();
+addEventListener('keydown', e => { keys.add(e.key.toLowerCase()); if (e.key === ' ') stopAll(); });
+addEventListener('keyup',   e => keys.delete(e.key.toLowerCase()));
+function keyAxis(neg, pos) {
+  return (keys.has(pos[0]) || keys.has(pos[1]) ? 1 : 0) - (keys.has(neg[0]) || keys.has(neg[1]) ? 1 : 0);
+}
+
+// ===== 摇杆值 → move 参数 =====
+// steerX: -1(左)..1(右)  pedalY: -1(上/前进)..1(下/后退)  limit: 0.1..1
+// 返回 [turn, speed]，整数，范围 -100..100（固件：速度 = -speed*0.007 m/s，转向 = -turn*0.15 rad/s）
+function toMoveArgs(steerX, pedalY, limit) {
+  const turn  = Math.trunc(steerX * 100 * limit);
+  const speed = Math.trunc(pedalY * 100 * limit);
+  return [turn, speed];
+}
+
+function currentCommand() {
+  const limit = $('limit').value / 100;
+  const sx = steer.pointer !== null ? steer.value : keyAxis(['a', 'arrowleft'], ['d', 'arrowright']);
+  const py = pedal.pointer !== null ? pedal.value : keyAxis(['w', 'arrowup'], ['s', 'arrowdown']);
+  const [turn, speed] = toMoveArgs(sx, py, limit);
+  return `move ${turn} ${speed}\n`;
+}
+
+// ===== 发送 =====
+async function send(text) {
+  if (!writeChar) return;
+  const data = encoder.encode(text);
+  if (writeChar.writeValueWithoutResponse) await writeChar.writeValueWithoutResponse(data);
+  else await writeChar.writeValue(data);
+}
+
+async function tick() {
+  const cmd = currentCommand();
+  $('cmd').textContent = cmd.trim();
+  if (!writeChar || writing) return;        // 上一包还没写完就跳过，不排队
+  writing = true;
+  try { await send(cmd); }
+  catch (e) { showError('发送失败：' + e.message); }
+  finally { writing = false; }
+}
+
+function stopAll() {
+  pedal.release(); steer.release(); keys.clear();
+  send('move 0 0\n').catch(() => {});
+}
+
+// ===== 连接 / 断开 =====
+function setStatus(text, cls) {
+  $('status').textContent = text;
+  $('dot').className = 'dot' + (cls ? ' ' + cls : '');
+}
+function showError(msg) { $('err').textContent = msg; $('err').style.display = msg ? 'block' : 'none'; }
+
+async function connect() {
+  showError('');
+  if (!navigator.bluetooth) {
+    showError('这个浏览器不支持 Web Bluetooth。iPhone 请用 Bluefy 浏览器打开；电脑请用 Chrome 或 Edge。');
+    return;
+  }
+  let step = '';                            // 记录走到哪一步，出错时一起显示
+  try {
+    $('btnConnect').disabled = true;
+    step = '1/4 选择设备';
+    setStatus(step + '…', 'busy');
+    device = await navigator.bluetooth.requestDevice({
+      filters: [{ namePrefix: 'BT_ECB' }],
+      optionalServices: [SERVICE_UUID],
+    });
+    device.addEventListener('gattserverdisconnected', onDisconnected);
+    step = '2/4 连接 ' + device.name;
+    setStatus(step + '…', 'busy');
+    const server = await device.gatt.connect();
+    step = '3/4 查找服务 FFF0';
+    setStatus(step + '…', 'busy');
+    const service = await server.getPrimaryService(SERVICE_UUID);
+    step = '4/4 查找特征 FFF2';
+    setStatus(step + '…', 'busy');
+    writeChar = await service.getCharacteristic(WRITE_CHAR_UUID);
+    setStatus('已连接 ' + device.name, 'ok');
+    $('btnDisconnect').disabled = false;
+  } catch (e) {
+    setStatus('未连接');
+    $('btnConnect').disabled = false;
+    if (e && e.name === 'NotFoundError') return;          // 用户取消了选择
+    // 有的浏览器抛出的不是标准 Error（没有 message），把能拿到的都显示出来
+    const detail = e == null ? String(e)
+                 : [e.name, e.message, e.code].filter(v => v !== undefined && v !== '').join(' / ') || String(e);
+    showError('连接失败（第 ' + step + ' 步）：' + detail);
+  }
+}
+
+async function disconnect() {
+  try { await send('move 0 0\n'); } catch (e) {}
+  if (device && device.gatt.connected) device.gatt.disconnect();
+  else onDisconnected();
+}
+
+function onDisconnected() {
+  writeChar = null;
+  setStatus('已断开');
+  $('btnConnect').disabled = false;
+  $('btnDisconnect').disabled = true;
+}
+
+// 切到后台时 iOS 会暂停定时器，小车会一直执行最后一条命令，所以离开前先发停止
+document.addEventListener('visibilitychange', () => { if (document.hidden) stopAll(); });
+addEventListener('pagehide', stopAll);
+
+$('btnConnect').onclick = connect;
+$('btnDisconnect').onclick = disconnect;
+$('stop').addEventListener('pointerdown', stopAll);
+$('limit').oninput = () => $('limitVal').textContent = $('limit').value + '%';
+
+timer = setInterval(tick, SEND_PERIOD_MS);
+</script>
+</body>
+</html>

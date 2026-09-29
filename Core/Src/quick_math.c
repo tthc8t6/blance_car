@@ -1,11 +1,15 @@
 #include "quick_math.h"
 #include <math.h>
 
-static const float sin_vals[1024]; // 正弦表，存储了从sin(0度)~sin(90度)，共1024个值
-static const float tan_vals[1024]; // 正切表，存储了从tan(0度)~tan(90度)，共1024个值
+#define PI 3.1415926535897932384626433832795f
+#define HALF_PI 1.5707963267948966192313216916398f
+#define IDX_PER_RAD 651.89864690440329530934789477382f //表索引/弧度 = 1024 / (PI/2)
+#define RAD_PER_IDX 0.00153398078788564122971808758949f //弧度/表索引 = (PI/2) / 1024
 
-// 二分搜索算法
-static uint16_t binary_search(const float *sorted_arrray, uint16_t array_length, float target);
+static const float sin_vals[1024]; // 正弦表，sin(0度)~sin(90度)，共1024个值
+static const float tan_vals[1024]; // 正切表，tan(0度)~tan(90度)，共1024个值
+
+static uint16_t binary_search(const float *sorted_array, uint16_t array_length, float target);
 
 //
 // @简介：正弦（sine）快速计算，使用查表法加速
@@ -14,38 +18,37 @@ static uint16_t binary_search(const float *sorted_arrray, uint16_t array_length,
 //
 float qsin(float x)
 {
-	float sign; // 弧度x的符号，x>0取+1，x<=0取-1
-	uint64_t idx; // 弧度x在sin_val表中对应的索引
-	
-	// 当x<0时，将角度折算到正角度，并使用sign标记符号
+	float sign; // x的符号，x>0取+1，x<=0取-1
+	uint64_t idx; // x在sin_vals表中对应的索引
+
+	// x<0时折算到正角度，用sign标记符号
 	if(x<0)
 	{
-		sign = -1.0;
+		sign = -1.0f;
 		x = -x;
 	}
 	else
 	{
-		sign = 1.0;
+		sign = 1.0f;
 	}
-	
-	// 计算角度x在sin_vals数组中所对应的索引
-	// idx = x * 1024 / (PI/2)，sin_vals表使用1024个元素表示0~PI/2的角度
-	idx	= (uint32_t)(x * 651.89864690440329530934789477382 + 0.5); // 651.899 = 1024 / (0.5*PI)
-	idx = idx - ((idx >> 12) << 12); // 归一化，对4096取余（4096对应2PI弧度）
-	
-	if(idx < 1024) // x在0 ~ PI/2之间
+
+	// idx = x * 1024 / (PI/2)，表用1024个元素表示0~PI/2
+	idx	= (uint32_t)(x * IDX_PER_RAD + 0.5f); // 651.899 = 1024 / (0.5*PI)
+	idx = idx - ((idx >> 12) << 12); // 对4096取余（4096对应2PI弧度）
+
+	if(idx < 1024) // 0 ~ PI/2
 	{
-		return sign * sin_vals[idx]; // 直接从sin_val表中取出元素
+		return sign * sin_vals[idx];
 	}
-	else if(idx < 2048) // x在PI/2 ~ PI之间
+	else if(idx < 2048) // PI/2 ~ PI，与sin_vals关于PI/2对称
 	{
-		return sign * sin_vals[2047-idx]; // 与sin_val关于x=PI/2对称
+		return sign * sin_vals[2047-idx];
 	}
-	else if(idx < 3072) // x在PI/2 ~ 3PI/2之间
+	else if(idx < 3072) // PI ~ 3PI/2，取相反数
 	{
-		return -sign * sin_vals[idx-2048]; // 相反数
+		return -sign * sin_vals[idx-2048];
 	}
-	else // x在3PI/2~2PI之间
+	else // 3PI/2 ~ 2PI
 	{
 		return -sign * sin_vals[4095-idx];
 	}
@@ -58,31 +61,29 @@ float qsin(float x)
 //
 float qcos(float x)
 {
-	uint64_t idx; // 弧度x在sin_val表中对应的索引
-	
-	// 计算角度x在sin_vals数组中所对应的索引
-	// idx = x * 1024 / (PI/2)，sin_vals表使用1024个元素表示0~PI/2的角度
-	idx = (uint64_t)(fabsf(x) * 651.89864690440329530934789477382 + 0.5);
-	
-	// 将余弦值折算为正弦值计算
-	idx = idx + 1024; // cos(x) = sin(x+PI/2)，PI/2 -> 1024
-	
-	// 角度归一化
-	idx = idx - ((idx >> 12) << 12); // 对4096取余，4096代表2*PI
-	
-	if(idx < 1024) // x在0 ~ PI/2之间
+	uint64_t idx; // x在sin_vals表中对应的索引
+
+	// idx = |x| * 1024 / (PI/2)
+	idx = (uint64_t)(fabsf(x) * IDX_PER_RAD + 0.5f);
+
+	// cos(x) = sin(x+PI/2)，PI/2 对应 1024
+	idx = idx + 1024;
+
+	idx = idx - ((idx >> 12) << 12); // 对4096取余（4096对应2PI弧度）
+
+	if(idx < 1024) // 0 ~ PI/2
 	{
 		return sin_vals[idx];
 	}
-	else if(idx < 2048) // x在PI/2 ~ PI之间
+	else if(idx < 2048) // PI/2 ~ PI
 	{
 		return sin_vals[2047-idx];
 	}
-	else if(idx < 3072) // x在PI/2 ~ 3PI/2之间
+	else if(idx < 3072) // PI ~ 3PI/2
 	{
 		return -sin_vals[idx-2048];
 	}
-	else // x在3PI/2~2PI之间
+	else // 3PI/2 ~ 2PI
 	{
 		return -sin_vals[4095-idx];
 	}
@@ -95,27 +96,25 @@ float qcos(float x)
 //
 float qtan(float x)
 {
-	float sign; // 弧度x的符号，x>0时sign取+1，x<=0时sign取-1
-	uint64_t idx; // 弧度x在正切表（即数组tan_val）中的位置
-	
+	float sign; // x的符号，x>0时sign取+1，x<=0时sign取-1
+	uint64_t idx; // x在tan_vals表中的位置
+
 	// 对x取绝对值，并标记符号
 	if(x<0)
 	{
-		sign = -1.0;
+		sign = -1.0f;
 		x = -x;
 	}
 	else
 	{
-		sign = 1.0;
+		sign = 1.0f;
 	}
-	
-	// 计算弧度x在正切表中的位置
+
 	// 651.8986 = 1024 / (PI / 2)
-	idx	= (uint64_t)(x * 651.89864690440329530934789477382 + 0.5);
-	
-	// 角度归一化
-	idx = idx - ((idx >> 12) << 12); // 对4096取余（4096 -> 2*PI）
-	
+	idx	= (uint64_t)(x * IDX_PER_RAD + 0.5f);
+
+	idx = idx - ((idx >> 12) << 12); // 对4096取余（4096对应2PI弧度）
+
 	if(idx < 1024) // 0 ~ PI/2
 	{
 		return sign * tan_vals[idx];
@@ -124,11 +123,11 @@ float qtan(float x)
 	{
 		return -sign * tan_vals[2047-idx];
 	}
-	else if(idx < 3072)
+	else if(idx < 3072) // PI ~ 3PI/2
 	{
 		return sign * tan_vals[idx-2048];
 	}
-	else
+	else // 3PI/2 ~ 2PI
 	{
 		return -sign * tan_vals[4095 - idx];
 	}
@@ -142,38 +141,37 @@ float qtan(float x)
 //
 float qasin(float x)
 {
-	// -pi/2 ~ pi / 2
-	float sign;
-	
+	float sign; // x的符号
+
 	if(x<0)
 	{
-		sign = -1.0;
+		sign = -1.0f;
 		x = -x;
 	}
 	else
 	{
-		sign = 1.0;
+		sign = 1.0f;
 	}
-	
-	uint16_t idx; // 正弦值x在sin_val表中的位置
-	
-	// 使用二分查找在sin_val表中定位x
+
+	uint16_t idx; // x在sin_vals表中的位置
+
+	// 二分查找定位x
 	idx = binary_search(sin_vals,1024,x);
-	
-	// 将idx（索引）转换为角度
-	return sign * idx * 0.00153398078788564122971808758949;
+
+	// 索引转角度，每格 (PI/2)/1024 = 0.001534 rad
+	return sign * idx * RAD_PER_IDX;
 }
 
 //
 // @简介：反余弦（arccos）快速计算，使用查表法加速
 // @参数：x - 余弦值
 // @返回值：arccos(x)，单位：弧度
-// @注意：此方法求出的弧度值在-PI/2~PI/2之间
+// @注意：此方法求出的弧度值在0~PI之间
 //
 float qacos(float x)
 {
 	// arccos(x) = -arcsin(x) + PI/2
-	return -qasin(x) + 1.5707963267948966192313216916398;
+	return -qasin(x) + HALF_PI;
 }
 
 
@@ -185,94 +183,89 @@ float qacos(float x)
 //
 float qatan(float x)
 {
-	// -pi/2 ~ pi / 2
-	float sign; 
-	
+	float sign; // x的符号
+
 	if(x<0)
 	{
-		sign = -1.0;
+		sign = -1.0f;
 		x = -x;
 	}
 	else
 	{
-		sign = 1.0;
+		sign = 1.0f;
 	}
-	
-	uint16_t idx; // 正切值x在tan_val表中的位置
-	
-	// 使用二分查找在tan_val表中定位x
+
+	uint16_t idx; // x在tan_vals表中的位置
+
+	// 二分查找定位x
 	idx	= binary_search(tan_vals,1024,x);
-	
-	// 将idx（索引）转换为角度
-	return sign * idx * 0.00153398078788564122971808758949;
+
+	// 索引转角度，每格 (PI/2)/1024 = 0.001534 rad
+	return sign * idx * RAD_PER_IDX;
 }
 
 
 //
 // @简介：反正切（arctan2）快速计算，使用查表法加速
-// @参数：x - 对边长度
-// @参数：y - 临边长度
-// @返回值：arctan2(x)，单位：弧度
+// @参数：y - 对边长度
+// @参数：x - 邻边长度
+// @返回值：arctan2(y, x)，单位：弧度
 // @注意：此方法求出的弧度值在-PI~PI之间
 //
 float qatan2(float y, float x)
 {
-	// 处理特殊情况，x=0，即y/x等于无穷大的情况
-	if(x == 0) // 临边为0
+	// x=0，即y/x为无穷大
+	if(x == 0)
 	{
-		if(y>=0) return 1.5707963267948966192313216916398; // +PI/2 （+90度）
-		if(y<0) return -1.5707963267948966192313216916398; // -PI/2 （-0度）
+		if(y>=0) return HALF_PI; // +PI/2
+		if(y<0) return -HALF_PI; // -PI/2
 	}
-	
-	// 一般情况
-	// 先使用arctan(x)求出角度值
+
+	// 先用arctan(y/x)求角度，再按象限修正
 	float angle =  qatan(y/x);
-	
-	// 调整象限位置
+
 	if(x < 0)
 	{
-		if(y > 0) // (x<0, y>0) 第二象限
+		if(y > 0) // 第二象限
 		{
-			angle = angle + 3.1415926535897932384626433832795;
+			angle = angle + PI;
 		}
-		else if(y < 0) // (x<0, y<0) 第三象限
+		else if(y < 0) // 第三象限
 		{
-			angle = angle - 3.1415926535897932384626433832795;
+			angle = angle - PI;
 		}
-		else // (x<0, y=0) // 位于x负半轴上
+		else // 位于x负半轴上
 		{
-			angle = - 3.1415926535897932384626433832795; // -180度
+			angle = - PI; // -PI
 		}
 	}
-	
+
 	return angle;
 }
 
 //
 // @简介：二分查找
-// @参数：sorted_arrray - 被查找的数组，必须是已排序好的数组（从小到大）
-// @参数：array_length  - 被查找的数组的长度
+// @参数：sorted_array - 被查找的数组，必须是已排序好的数组（从小到大）
+// @参数：array_length - 被查找的数组的长度
 // @参数：target - 待查找的目标值
 // @返回值：待查找的目标值在数组中的位置（0~array_length-1）
 //
-static uint16_t binary_search(const float *sorted_arrray, uint16_t array_length, float target)
+static uint16_t binary_search(const float *sorted_array, uint16_t array_length, float target)
 {
 	uint16_t low, mid, high;
-	
+
 	low = 0;
 	high = array_length - 1;
-	
+
 	while(low <= high)
 	{
 		mid = low + (high - low) / 2;
-		
-		// 如果目标值在左半部分，缩小搜索范围至左半部分
-		if (sorted_arrray[mid] > target) 
+
+		if (sorted_array[mid] > target) // 目标值在左半部分
 		{
 			high = mid - 1;
 		}
-		// 如果目标值在右半部分，缩小搜索范围至右半部分
-		else if(sorted_arrray[mid] < target)
+		else if(sorted_array[mid] < target) // 目标值在右半部分
 		{
 			low = mid + 1;
 		}
@@ -281,7 +274,7 @@ static uint16_t binary_search(const float *sorted_arrray, uint16_t array_length,
 			return mid;
 		}
 	}
-	
+
 	return mid;
 }
 

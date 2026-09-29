@@ -37,6 +37,7 @@
 #include "app_motor.h"
 #include "task.h"
 #include "app_control.h"
+#include "app_rc.h"
 //#include "encoder_test.h"
 //#include "PWM_test.h"
 //#include "mpu6500_test.h"
@@ -111,12 +112,14 @@ int main(void)
   MX_TIM4_Init();
   MX_USART2_UART_Init();
   MX_I2C1_Init();
+  MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
   App_Bat_Start();
-  App_Encoder_Init(); // 提升SysTick优先级，必须在HAL_Init/SystemClock_Config之后
+  App_Encoder_Init();
   App_MPU6500_Init();
   App_Motor_Init();
   App_Control_Init();
+  App_RC_Init();
   // PWM_Test();
   // Encoder_Test();
   // Encoder_M_Test();
@@ -134,7 +137,7 @@ int main(void)
    //电池按钮执行片段
 		App_Button_Process();
 
-    //MPU6500姿态解算片段
+    //MPU6500姿态角解算片段
     App_MPU6500_Process();
 
     //PID控制片段
@@ -142,6 +145,9 @@ int main(void)
 
     //电机调控片段
     App_Motor_Process();
+
+    //遥控器处理片段
+    App_RC_Process();
 		
 
     /* USER CODE END WHILE */
@@ -151,6 +157,7 @@ int main(void)
   }
   /* USER CODE END 3 */
 }
+
 /**
   * @brief System Clock Configuration
   * @retval None
