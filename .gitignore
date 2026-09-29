@@ -1,0 +1,5 @@
+# Keil 编译产物与本机 IDE 状态
+MDK-ARM/blance_car/
+MDK-ARM/build.log
+MDK-ARM/*.lst
+MDK-ARM/*.uvguix.*
