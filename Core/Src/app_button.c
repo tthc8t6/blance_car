@@ -1,6 +1,7 @@
 #include "app_button.h"
 #include "app_motor.h"
 #include "app_control.h"
+#include "app_rc.h"
 
 static uint8_t last_reading = 1;          // 上一次读取到的原始电平
 static uint8_t stable_state = 1;          // 消抖后的稳定状态 
@@ -28,6 +29,7 @@ void App_Button_Process(void)
 					// 下降沿（按下瞬间）翻转输出 stable_state为0表示按钮闭合过 为1表示未闭合过
             if (stable_state == 0) {
                 App_Control_Reset();// 每次按下(启动或停止)都复位一次
+                App_RC_Clear(); // 每次按下(启动或停止)都清除RC缓冲区
                 output_state = !output_state;
                 App_Motor_Cmd(output_state); // 根据 output_state 控制电机
             }

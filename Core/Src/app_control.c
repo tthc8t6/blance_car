@@ -9,6 +9,7 @@
 pid_typedef pid_theta; //角度环PID控制器
 pid_typedef pid_theta_dot; //角加速度环PID控制器
 pid_typedef pid_velocity; //速度环PID控制器
+pid_typedef pid_turn; //转向环PID控制器
 float const g = 9.81f; //重力加速度 m/s^2
 float const lp = 0.062f; //力臂 m
 float const Rw = 0.03f; //轮半径 m
@@ -21,6 +22,9 @@ void App_Control_Init(void)
 {
     pid_init(&pid_velocity, 10.0f, 1.0f, 0.0f); //速度环PID参数
     pid_limit_config(&pid_velocity, -0.5*g, 0.5*g); //速度环PID输出限幅 限制在+-0.5g 之间
+
+    pid_init(&pid_turn, 1.0f, 0.0f, 0.0f); //转向环PID参数
+    pid_limit_config(&pid_turn, -10.0f, 10.0f ); //转向环PID输出限幅 限制在+-10 rad/s 之间
 
     pid_init(&pid_theta, 4.0f, 0.0f, 0.0f); //角度环PID参数
     pid_limit_config(&pid_theta, -12.57f, 12.57f ); //角度环PID输出限幅 限制在+-4PI rad/s 之间
@@ -37,6 +41,7 @@ void App_Control_Reset(void)
     pid_reset(&pid_velocity); //清速度环的积分项与微分历史
     pid_reset(&pid_theta);     //清角度环的积分项与微分历史
     pid_reset(&pid_theta_dot); //清角加速度环的积分项与微分历史
+    pid_reset(&pid_turn); //清转向环的积分项与微分历史
 
     omega_ref = 0.0f; //第7步那个纯积分器自己也要清
 
@@ -55,9 +60,6 @@ void App_Control_Process(void)
 
     uint64_t now = App_GetMicroseconds(); //获取当前时间 单位us
     float deltaT = (now - last_time) * 1e-6f; //计算时间差 单位s
-
-    //-1.改变速度环设定值
-    pid_changesp(&pid_velocity, 0.0f); //速度环设定值为0.0 m/s
 
     //-2.读取编码器值
     float omega_l, omega_r; //左右轮角速度 单位rad/s
@@ -115,10 +117,23 @@ void App_Control_Process(void)
     if (omega_ref < -40.0f) {
         omega_ref = -40.0f; //限制电机转速环设定值在-40 rad/s 之间
     }
-    App_Motor_Set_Speed_L(omega_ref); //设置左电机转速环设定值为omega_ref
-    App_Motor_Set_Speed_R(omega_ref); //设置右电机转速环设定值为omega_ref
+   
+    float gz = App_MPU6500_Get_Gyro_Z() * 0.0174533f; //获取Z轴角速度 单位rad/s
+    float omega_diff = PID_Compute(&pid_turn, gz); //计算转向环PID输出
+    
+    App_Motor_Set_Speed_L(omega_ref + omega_diff); //设置左电机转速环设定值为omega_ref+omega_diff
+    App_Motor_Set_Speed_R(omega_ref - omega_diff); //设置右电机转速环设定值为omega_ref-omega_diff
 
     //9.更新上次积分时间
     last_time = now; //更新积分时间
 }
 
+void App_Control_SetMoveSpeed(float MoveSpeed)
+{
+   pid_changesp(&pid_velocity, MoveSpeed); //设置速度环设定值为MoveSpeed
+}
+
+void App_Control_SetTurnSpeed(float TurnSpeed)
+{
+   pid_changesp(&pid_turn, TurnSpeed); //设置转向环设定值为TurnSpeed
+}

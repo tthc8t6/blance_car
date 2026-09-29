@@ -435,6 +435,61 @@
               <FilePath>..\Core\Inc\app_encoder.h</FilePath>
             </File>
             <File>
+              <FileName>task.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Core\Inc\task.h</FilePath>
+            </File>
+            <File>
+              <FileName>quick_math.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\quick_math.c</FilePath>
+            </File>
+            <File>
+              <FileName>quick_math.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Core\Inc\quick_math.h</FilePath>
+            </File>
+            <File>
+              <FileName>app_motor.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Core\Inc\app_motor.h</FilePath>
+            </File>
+            <File>
+              <FileName>app_motor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\app_motor.c</FilePath>
+            </File>
+            <File>
+              <FileName>pid.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Core\Inc\pid.h</FilePath>
+            </File>
+            <File>
+              <FileName>pid.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\pid.c</FilePath>
+            </File>
+            <File>
+              <FileName>app_control.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Core\Inc\app_control.h</FilePath>
+            </File>
+            <File>
+              <FileName>app_control.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\app_control.c</FilePath>
+            </File>
+            <File>
+              <FileName>app_mpu6500.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Core\Inc\app_mpu6500.h</FilePath>
+            </File>
+            <File>
+              <FileName>app_mpu6500.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\app_mpu6500.c</FilePath>
+            </File>
+            <File>
               <FileName>main.c</FileName>
               <FileType>1</FileType>
               <FilePath>../Core/Src/main.c</FilePath>
@@ -577,59 +632,14 @@
               <FilePath>../Core/Src/stm32f1xx_hal_msp.c</FilePath>
             </File>
             <File>
-              <FileName>task.h</FileName>
+              <FileName>app_rc.h</FileName>
               <FileType>5</FileType>
-              <FilePath>..\Core\Inc\task.h</FilePath>
+              <FilePath>..\Core\Inc\app_rc.h</FilePath>
             </File>
             <File>
-              <FileName>quick_math.c</FileName>
+              <FileName>app_rc.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Core\Src\quick_math.c</FilePath>
-            </File>
-            <File>
-              <FileName>quick_math.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Core\Inc\quick_math.h</FilePath>
-            </File>
-            <File>
-              <FileName>app_motor.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Core\Inc\app_motor.h</FilePath>
-            </File>
-            <File>
-              <FileName>app_motor.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Core\Src\app_motor.c</FilePath>
-            </File>
-            <File>
-              <FileName>pid.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Core\Inc\pid.h</FilePath>
-            </File>
-            <File>
-              <FileName>pid.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Core\Src\pid.c</FilePath>
-            </File>
-            <File>
-              <FileName>app_control.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Core\Inc\app_control.h</FilePath>
-            </File>
-            <File>
-              <FileName>app_control.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Core\Src\app_control.c</FilePath>
-            </File>
-            <File>
-              <FileName>app_mpu6500.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Core\Inc\app_mpu6500.h</FilePath>
-            </File>
-            <File>
-              <FileName>app_mpu6500.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Core\Src\app_mpu6500.c</FilePath>
+              <FilePath>..\Core\Src\app_rc.c</FilePath>
             </File>
           </Files>
         </Group>
