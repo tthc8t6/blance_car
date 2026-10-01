@@ -76,44 +76,35 @@ static HAL_StatusTypeDef App_MPU6500_ReadBytes(uint8_t reg, uint8_t *buf, uint16
 //
 // @简介：初始化MPU6500：复位、选时钟源、采样率1kHz、陀螺仪与加速度计低通92Hz、量程±2000dps/±2g
 // @参数：无
-// @返回值：HAL_OK表示初始化成功
+// @返回值：无
 //
-HAL_StatusTypeDef App_MPU6500_Init(void)
+void App_MPU6500_Init(void)
 {
-    HAL_StatusTypeDef status;
 
     /* 第一步: 复位 MPU6500 (PWR_MGMT_1 bit7 = DEVICE_RESET) */
-    status = App_MPU6500_WriteByte(MPU6500_REG_PWR_MGMT_1, 0x80);
-    if (status != HAL_OK) return status;
+    App_MPU6500_WriteByte(MPU6500_REG_PWR_MGMT_1, 0x80);
 
     /* 等待复位完成 (约 100ms) */
     HAL_Delay(100);
 
     /* 第二步: 唤醒, CLKSEL=1 自动选择最佳时钟源 */
-    status = App_MPU6500_WriteByte(MPU6500_REG_PWR_MGMT_1, 0x01);
-    if (status != HAL_OK) return status;
-
+    App_MPU6500_WriteByte(MPU6500_REG_PWR_MGMT_1, 0x01);
+ 
     /* 第三步: 输出数据率 ODR = 1kHz/(1+0) = 1kHz */
-    status = App_MPU6500_WriteByte(MPU6500_REG_SMPLRT_DIV, 0x00);
-    if (status != HAL_OK) return status;
+    App_MPU6500_WriteByte(MPU6500_REG_SMPLRT_DIV, 0x00);
 
     /* 第四步: 陀螺仪数字低通滤波器 92Hz, 延迟 3.9ms */
-    status = App_MPU6500_WriteByte(MPU6500_REG_CONFIG, MPU6500_DLPF_92HZ);
-    if (status != HAL_OK) return status;
-
+    App_MPU6500_WriteByte(MPU6500_REG_CONFIG, MPU6500_DLPF_92HZ);
+    
     /* 第五步: 加速度计量程 ±2g, 灵敏度 16384 LSB/g */
-    status = App_MPU6500_WriteByte(MPU6500_REG_ACCEL_CONFIG, MPU6500_ACCEL_FS_2G);
-    if (status != HAL_OK) return status;
+    App_MPU6500_WriteByte(MPU6500_REG_ACCEL_CONFIG, MPU6500_ACCEL_FS_2G);
 
     /* 第六步: 陀螺仪量程 ±2000°/s, 灵敏度 16.4 LSB/(°/s) */
-    status = App_MPU6500_WriteByte(MPU6500_REG_GYRO_CONFIG, MPU6500_GYRO_FS_2000);
-    if (status != HAL_OK) return status;
+    App_MPU6500_WriteByte(MPU6500_REG_GYRO_CONFIG, MPU6500_GYRO_FS_2000);
 
     /* 第七步: 加速度计数字低通滤波器 92Hz, 延迟 7.8ms (MPU6500 独有寄存器) */
-    status = App_MPU6500_WriteByte(MPU6500_REG_ACCEL_CONFIG2, MPU6500_ACCEL_DLPF_92HZ);
-    if (status != HAL_OK) return status;
+    App_MPU6500_WriteByte(MPU6500_REG_ACCEL_CONFIG2, MPU6500_ACCEL_DLPF_92HZ);
 
-    return HAL_OK;
 }
 
 //
@@ -194,6 +185,39 @@ HAL_StatusTypeDef App_MPU6500_Update(void)
 }
 
 //
+// @简介：检查MPU6500是否丢失配置，丢失则重新配置
+// @参数：无
+// @注意：MPU6500掉电复位后寄存器回到默认值（陀螺仪±250dps、低通关闭），而STM32并不知道，
+//        仍按±2000dps换算，角速度读数会大8倍。只允许App_MPU6500_Process调用
+//
+static void App_MPU6500_CheckConfig(void)
+{
+    uint8_t gyro_config;
+
+    // 读回陀螺仪量程寄存器，读失败说明总线有问题，交给下一拍的Update去恢复
+    if (App_MPU6500_ReadBytes(MPU6500_REG_GYRO_CONFIG, &gyro_config, 1) != HAL_OK)
+    {
+        return;
+    }
+    // 如果陀螺仪量程不是 ±2000°/s，则重新配置 MPU6500
+    if (gyro_config != MPU6500_GYRO_FS_2000)
+    {
+       //唤醒, CLKSEL=1 自动选择最佳时钟源
+       App_MPU6500_WriteByte(MPU6500_REG_PWR_MGMT_1, 0x01);
+       // 输出数据率 ODR = 1kHz/(1+0) = 1kHz
+       App_MPU6500_WriteByte(MPU6500_REG_SMPLRT_DIV, 0x00);
+       // 陀螺仪数字低通滤波器 92Hz, 延迟 3.9ms
+       App_MPU6500_WriteByte(MPU6500_REG_CONFIG, MPU6500_DLPF_92HZ);
+       // 加速度计量程 ±2g, 灵敏度 16384 LSB/g
+       App_MPU6500_WriteByte(MPU6500_REG_ACCEL_CONFIG, MPU6500_ACCEL_FS_2G);
+       // 陀螺仪量程 ±2000°/s, 灵敏度 16.4 LSB/(°/s)
+       App_MPU6500_WriteByte(MPU6500_REG_GYRO_CONFIG, MPU6500_GYRO_FS_2000);
+       // 加速度计数字低通滤波器 92Hz, 延迟 7.8ms (MPU6500 独有寄存器)
+       App_MPU6500_WriteByte(MPU6500_REG_ACCEL_CONFIG2, MPU6500_ACCEL_DLPF_92HZ);
+    }
+}
+
+//
 // @简介：获取温度
 // @参数：无
 // @返回值：温度，单位摄氏度
@@ -264,6 +288,7 @@ float App_MPU6500_Get_Gyro_Z(void)
 }
 
 static float yaw, pitch, roll=0.0f; // 欧拉角 单位度
+
 //
 // @简介：姿态解算，每5ms执行一次：读传感器，陀螺仪积分与加速度计角度做互补滤波，得到偏航/俯仰/横滚角
 // @参数：无
@@ -272,6 +297,14 @@ static float yaw, pitch, roll=0.0f; // 欧拉角 单位度
 void App_MPU6500_Process(void)
 {
   PERIODIC(5) // 每5ms执行一次 200Hz
+
+  // 每20拍(100ms)检查一次MPU6500配置是否丢失
+  static uint8_t check_count = 0;
+  if (++check_count >= 20)
+  {
+    check_count = 0;
+    App_MPU6500_CheckConfig();
+  }
 
   // 先刷新传感器缓存, 否则 Get 读到的是上一拍的旧值
   if (App_MPU6500_Update() != HAL_OK)

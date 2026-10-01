@@ -49,7 +49,7 @@ typedef struct {
     float gyro_z;     // Z轴角速度 (°/s)
 } MPU6500_Data_t;
 
-HAL_StatusTypeDef App_MPU6500_Init(void);
+void App_MPU6500_Init(void);
 
 HAL_StatusTypeDef App_MPU6500_Update(void);
 
