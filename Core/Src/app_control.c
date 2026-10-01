@@ -8,6 +8,8 @@
 
 #define DEG2RAD 0.0174533f //度转弧度 PI/180
 #define OMEGA_REF_MAX 40.0f //电机转速环设定值限幅 单位rad/s
+#define RECOVER_ANGLE 0.1745f //倒地后恢复平衡的倾角阈值 10° = 10*PI/180 rad
+#define RECOVER_TIME_MS 500U //扶正到阈值以内后需连续保持的时间 单位ms
 
 static pid_typedef pid_theta; //角度环PID控制器
 static pid_typedef pid_theta_dot; //角加速度环PID控制器
@@ -19,6 +21,8 @@ static const float Rw = 0.03f; //轮半径 m
 static const float theta_max = 1.3963f; //倾角保护阈值 80° = 80*PI/180 rad
 static uint64_t last_time = 0; //上次积分时间
 static float omega_ref = 0.0f; //电机转速环设定值 单位rad/s
+static uint8_t fallen = 0; //倒地标志 1=已倒地，等待扶正
+static uint32_t upright_tick = 0; //扶正到RECOVER_ANGLE以内的起始时刻 单位ms
 
 //
 // @简介：初始化速度环、转向环、角度环、角加速度环四个PID的参数与输出限幅，并复位控制器
@@ -62,6 +66,41 @@ void App_Control_Reset(void)
 }
 
 //
+// @简介：倒地保护：倾角超过80°判为倒地；倒地后需扶正到RECOVER_ANGLE以内并连续保持RECOVER_TIME_MS才恢复平衡
+// @参数：theta - 当前倾角 单位rad
+// @返回值：1表示本拍应停止平衡控制（倒地中），0表示正常控制
+// @注意：返回1时由调用者执行App_Control_Reset()，电机设定值保持0；|theta|>80°时必须返回1，否则cos(theta)趋近0
+//
+static uint8_t App_Control_FallGuard(float theta)
+{
+    if(theta > theta_max || theta < -theta_max)
+    {
+        fallen = 1; //进入倒地状态
+        return 1;
+    }
+    if(fallen == 1)
+    {
+        if(theta < -RECOVER_ANGLE || theta > RECOVER_ANGLE)
+        {
+            upright_tick = 0; //又倾斜出阈值，重新计时
+        }
+        if(theta > -RECOVER_ANGLE && theta < RECOVER_ANGLE && upright_tick == 0)
+        {
+            upright_tick = HAL_GetTick(); //刚扶正到阈值内，开始计时
+        }
+        if(upright_tick != 0 && HAL_GetTick() - upright_tick >= RECOVER_TIME_MS)
+        {
+            fallen = 0; //保持足够久，扶正成功
+            upright_tick = 0;
+            return 0;
+        }
+        return 1; //倒地中
+    }
+
+    return 0;
+}
+
+//
 // @简介：平衡控制主流程，每5ms执行一次：速度环->角度环->角加速度环->逆解算->积分得电机转速->叠加转向环，写入左右电机设定值
 // @参数：无
 // @注意：倾角超过80度时复位控制器并直接返回
@@ -73,50 +112,50 @@ void App_Control_Process(void)
     uint64_t now = App_GetMicroseconds(); //当前时间 单位us
     float deltaT = (now - last_time) * 1e-6f; //时间差 单位s
 
-    //-2.读取编码器值
+    //1.读取编码器值
     float omega_l, omega_r; //左右轮角速度 单位rad/s
     App_Encoder_Get_Speed(&omega_l, &omega_r);
     float omega=(omega_l + omega_r)*0.5f;
-    float theta = App_MPU6500_Get_Pitch() * DEG2RAD; //当前角度 单位rad 
+    float theta = App_MPU6500_Get_Pitch() * DEG2RAD; //当前角度 单位rad
     float theta_dot = App_MPU6500_Get_Gyro_X() * DEG2RAD; //当前角速度 单位rad/s
 
-    //-2.计算速度环PID的返回值x_dot
+    //2.计算速度环PID的返回值x_dot
     float omega2 =-theta_dot * (lp+Rw) / Rw;
     float omega1 =omega - omega2;
     float x_dot = omega1 * Rw;
 
-    //-3.计算速度环PID+逆解算
+    //3.计算速度环PID+逆解算
     float theta_ref=qatan(pid_compute(&pid_velocity,x_dot) / g);
 
-    //1.设定角度环设定值
+    //4.设定角度环设定值
     pid_changesp(&pid_theta, theta_ref);
 
-    //2.5 倾角保护: 倾角过大时cos(theta)趋近0会除零，复位后车被扶起从静止开始
-    if (theta > theta_max || theta < -theta_max)
+    //5.倒地保护: 倒地期间复位控制器、电机设定值保持0，扶正并放稳后才恢复平衡
+    if (App_Control_FallGuard(theta))
     {
         App_Control_Reset();
         return;
     }
 
-    //3.计算角度环PID输出
+    //6.计算角度环PID输出
     float theta_dot_ref = pid_compute(&pid_theta, theta); //输出为角加速度环设定值
 
-    //4.设定角加速度环目标值
+    //7.设定角加速度环目标值
     pid_changesp(&pid_theta_dot, theta_dot_ref);
 
-    //5.计算角加速度环PID输出
+    //8.计算角加速度环PID输出
     float theta_dot_dot_ref = pid_compute(&pid_theta_dot, theta_dot); //输出为逆解算输入
 
-    //6.逆解算角加速度为线加速度
+    //9.逆解算角加速度为线加速度
     float x_dot_dot_ref = (g * qsin(theta)- theta_dot_dot_ref * lp) / qcos(theta);
 
-    //7.计算电机转速
+    //10.计算电机转速
     if(last_time != 0)
     {
        omega_ref = omega_ref + 1.0f / Rw * x_dot_dot_ref * deltaT;
     }
 
-    //8.设定电机转速环设定值为omega_ref
+    //11.限幅电机转速环设定值omega_ref
     if (omega_ref > OMEGA_REF_MAX) {
         omega_ref = OMEGA_REF_MAX; //限幅 +-40 rad/s
     }
@@ -124,13 +163,14 @@ void App_Control_Process(void)
         omega_ref = -OMEGA_REF_MAX;
     }
 
+    //12.计算转向环PID输出，叠加到左右电机设定值
     float gz = App_MPU6500_Get_Gyro_Z() * DEG2RAD; //Z轴角速度 单位rad/s
     float omega_diff = pid_compute(&pid_turn, gz); //转向环输出
 
     App_Motor_Set_Speed_L(omega_ref + omega_diff);
     App_Motor_Set_Speed_R(omega_ref - omega_diff);
 
-    //9.更新上次积分时间
+    //13.更新上次积分时间
     last_time = now;
 }
 
