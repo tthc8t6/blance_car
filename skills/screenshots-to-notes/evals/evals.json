@@ -1,0 +1,13 @@
+{
+  "skill_name": "screenshots-to-notes",
+  "evals": [
+    {
+      "id": 0,
+      "eval_name": "small-batch-png",
+      "prompt": "C:\\Users\\tth\\.claude\\skills\\screenshots-to-notes-workspace\\inputs\\course_shots 里是我上课时截的几张图，帮我整理成一份学习笔记 study_notes.md，看不清的地方标出来别瞎猜，我之后要对照原图核对。",
+      "expected_output": "images/ 下有转正压缩后的 jpg 和 manifest.json；_parts/ 下有分段稿；study_notes.md 开头有 Typora 内联公式提示和核对清单（A/B/C 分类），每节嵌入对应图片，不确定处标【看不清】或形似 X。",
+      "files": ["C:\\Users\\tth\\.claude\\skills\\screenshots-to-notes-workspace\\inputs\\course_shots"],
+      "assertions": []
+    }
+  ]
+}
