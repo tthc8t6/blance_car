@@ -12,8 +12,10 @@ Angle + rate loops · inverse dynamics · velocity & turn loops · Web Bluetooth
 ![IDE](https://img.shields.io/badge/IDE-Keil%20MDK%205-1F6FEB)
 ![HAL](https://img.shields.io/badge/HAL-STM32CubeF1-03234B)
 ![Remote](https://img.shields.io/badge/Remote-Web%20Bluetooth-4285F4?logo=googlechrome&logoColor=white)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/tthc8t6/blance_car)](https://github.com/tthc8t6/blance_car/releases/latest)
 
-[Features](#-features) · [Control](#-control-architecture) · [Hardware](#-hardware) · [Getting Started](#-getting-started) · [Remote](#-bluetooth-remote) · [Layout](#-project-layout) · [Lessons Learned](#-lessons-learned)
+[Features](#-features) · [Control](#-control-architecture) · [Hardware](#-hardware) · [Getting Started](#-getting-started) · [Remote](#-bluetooth-remote) · [Layout](#-project-layout) · [Lessons Learned](#-lessons-learned) · [License](#-license)
 
 </div>
 
@@ -107,6 +109,10 @@ The motor model comes from measured parameters, `Gm(s) = 5.591 / ((s/14.2+1)(s/1
 - Keil MDK-ARM 5 (ARMCC v5.06)
 - STM32CubeMX (only to change peripheral config; project file `blance_car.ioc`)
 - An ST-Link probe (Keil's built-in download or OpenOCD)
+
+### Flash a prebuilt firmware
+
+Same hardware and no Keil? Download `blance_car.hex` from the [latest release](https://github.com/tthc8t6/blance_car/releases/latest) and flash it with STM32CubeProgrammer, ST-Link Utility or OpenOCD (command below).
 
 ### Build & Flash
 
@@ -278,6 +284,10 @@ Bluefy requires the full 128-bit UUID string (`0000fff0-0000-1000-8000-00805f9b3
 - The control derivation and tuning approach come from the Bilibili balance-car course [《平衡车要开课了，先来个原地起飞~》](https://www.bilibili.com/video/BV1wdqhY4E3R/) — thanks to the course author for the lectures and reference firmware
 - [STMicroelectronics STM32CubeF1](https://github.com/STMicroelectronics/STM32CubeF1) HAL library
 - [VOFA+](https://www.vofa.plus/) serial plotting tool
+
+## 📄 License
+
+The code written for this project is released under the [MIT License](LICENSE). STM32 HAL and CMSIS under `Drivers/` keep their own licenses from STMicroelectronics and Arm. The course material credited above belongs to its author and is not included in this repository.
 
 ---
 
